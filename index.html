@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KU Hospital Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .custom-popup {
+      background: #f7f7f7;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .custom-popup .leaflet-popup-content {
+      margin: 0;
+      padding: 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .custom-popup h3 {
+      margin: 0;
+      padding: 5px 0;
+      font-size: 16px;
+      color: #007bff;
+    }
+
+    .custom-popup p {
+      margin: 0;
+      padding: 5px 0;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  class CustomMarker extends L.Marker {
+    constructor(latlng, options, popupContent) {
+      super(latlng, options);
+      this.popupContent = popupContent;
+      this.bindPopup(this.popupContent);
+    }
+  }
+
+  class HospitalMap {
+    constructor(mapContainer, center, zoom, tileLayers, defaultLayerIndex) {
+      this.map = L.map(mapContainer).setView(center, zoom);
+      this.tileLayers = tileLayers;
+      this.defaultLayerIndex = defaultLayerIndex;
+      this.markers = [];
+
+      // Add default layer to the map
+      this.tileLayers[this.defaultLayerIndex].addTo(this.map);
+
+      // Add layer control
+      this.addLayerControl();
+    }
+
+    addMarker(latlng, options, popupContent) {
+      const marker = new CustomMarker(latlng, options, popupContent);
+      this.markers.push(marker);
+      marker.addTo(this.map);
+    }
+
+    addLayerControl() {
+      const baseMaps = {
+        "OpenStreetMap": this.tileLayers[0],
+        "Thunderforest Transport": this.tileLayers[1]
+      };
+      L.control.layers(baseMaps).addTo(this.map);
+    }
+
+    // Function to switch tile layers
+    switchTileLayer(layerIndex) {
+      // Remove current layer
+      this.map.eachLayer((layer) => {
+        if (layer instanceof L.TileLayer) {
+          this.map.removeLayer(layer);
+        }
+      });
+
+      // Add new layer
+      this.tileLayers[layerIndex].addTo(this.map);
+    }
+  }
+
+  const tileLayerOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  });
+
+  const tileLayerThunderforest = L.tileLayer('https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>'
+  });
+
+  const tileLayers = [tileLayerOSM, tileLayerThunderforest];
+
+  const hospitalMap = new HospitalMap('map', [-1.2921, 36.8219], 16, tileLayers, 0); // Adjusted zoom level to 16, defaultLayerIndex 0 (OSM)
+
+
+  const popupContents = {
+    "Emergency Ward": `
+        <div class="custom-popup">
+            <h3>Emergency Ward</h3>
+            <p>The emergency services area at KU Hospital.</p>
+        </div>
+    `,
+    "Surgical Unit": `
+        <div class="custom-popup">
+            <h3>Surgical Unit</h3>
+            <p>The surgical unit providing specialized surgical services.</p>
+        </div>
+    `,
+    "Maternity Ward": `
+        <div class="custom-popup">
+            <h3>Maternity Ward</h3>
+            <p>A dedicated area for maternity care and services.</p>
+        </div>
+    `,
+    "Pediatric Ward": `
+        <div class="custom-popup">
+            <h3>Pediatric Ward</h3>
+            <p>Specialized care for children at KU Hospital.</p>
+        </div>
+    `,
+    "Diagnostic Imaging": `
+        <div class="custom-popup">
+            <h3>Diagnostic Imaging</h3>
+            <p>Facilities for diagnostic imaging and radiology services.</p>
+        </div>
+    `
+  };
+
+  const locations = {
+    "Emergency Ward": [-1.2915, 36.8208],
+    "Surgical Unit": [-1.2917, 36.8222],
+    "Maternity Ward": [-1.2924, 36.8203],
+    "Pediatric Ward": [-1.2910, 36.8210],
+    "Diagnostic Imaging": [-1.2918, 36.8215]
+  };
+
+  for (const section in locations) {
+    hospitalMap.addMarker(locations[section], {}, popupContents[section]);
+  }
+</script>
+</body>
+</html>
